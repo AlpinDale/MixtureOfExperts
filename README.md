@@ -2,7 +2,7 @@
 This repository contains code for implementations of different methods for modeling Mixtures of Experts (currently BlockSparse MoE).
 
 ## BlockSparse
-Similar to [Mixtral](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1), we implemented a [BlockSparce MoE](./blocksparse_moe.py) that shards each expert across parallel ranks;
+Similar to [Mixtral](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1), we implement a [BlockSparse MoE](./blocksparse_moe.py) that shards each expert across parallel ranks;
 
 First, we define methods for expert parallelism, such as the Linear method.
 
