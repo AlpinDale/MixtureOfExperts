@@ -213,8 +213,8 @@ elif _is_hip():
 ext_modules = []
 
 moe_extension_sources = [
-    "ops.h",
-    "kernel.cu"
+    "csrc/pybind.cpp",
+    "csrc/blocksparse.cu"
 ]
 
 blocksparse_extension = CUDAExtension(
@@ -240,21 +240,54 @@ def read_readme() -> str:
     else:
         return ""
 
+def find_version(filepath: str) -> str:
+    """Extract version information from the given filepath.
+
+    Adapted from https://github.com/ray-project/ray/blob/0b190ee1160eeca9796bc091e07eaebf4c85b511/python/setup.py
+    """
+    with open(filepath) as fp:
+        version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                                  fp.read(), re.M)
+        if version_match:
+            return version_match.group(1)
+        raise RuntimeError("Unable to find version string.")
+
+def get_moe_version() -> str:
+    version = find_version(get_path("mixture_of_experts", "__init__.py"))
+    
+    if _is_hip():
+        # get the HIP version
+
+        hipcc_version = get_hipcc_rocm_version()
+        if hipcc_version != MAIN_CUDA_VERSION:
+            rocm_version_str = hipcc_version.replace(".", "")[:3]
+            version += f"+rocm{rocm_version_str}"
+    else:
+        cuda_version = str(nvcc_cuda_version)
+        # Split the version into numerical and suffix parts
+        version_parts = version.split('-')
+        version_num = version_parts[0]
+        version_suffix = version_parts[1] if len(version_parts) > 1 else ''
+        
+        if cuda_version != MAIN_CUDA_VERSION:
+            cuda_version_str = cuda_version.replace(".", "")[:3]
+            version_num += f"+cu{cuda_version_str}"
+        
+        # Reassemble the version string with the suffix, if any
+        version = version_num + ('-' + version_suffix if version_suffix else '')
+        
+        return version
 
 def get_requirements() -> List[str]:
     """Get Python package dependencies from requirements.txt."""
-    if _is_hip():
-        with open(get_path("requirements-rocm.txt")) as f:
-            requirements = f.read().strip().split("\n")
-    else:
-        with open(get_path("requirements.txt")) as f:
-            requirements = f.read().strip().split("\n")
+    with open(get_path("requirements.txt")) as f:
+        requirements = f.read().strip().split("\n")
     return requirements
 
 
 setuptools.setup(
-    name="MixtureOfExperts",
-    version="0.1",
+    name="mixture_of_experts",
+    version=find_version(get_path("mixture_of_experts", "__init__.py")),
     author="AlpinDale",
     license="AGPL 3.0",
     long_description=read_readme(),
@@ -268,7 +301,7 @@ setuptools.setup(
         "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=("csrc")),
     python_requires=">=3.8",
     install_requires=get_requirements(),
     ext_modules=ext_modules,

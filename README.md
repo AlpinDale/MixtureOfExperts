@@ -14,13 +14,14 @@ Currently, we apply top_k routing logic, but min_p routing is in the works. We u
 You can install the repository by running `pip install -e .`, then import the modules:
 
 ```py
-from blocksparse_moe import MoE
+from mixture_of_experts import MoE
 ```
 
 Example usage:
 
 ```python
-from blocksparse_moe import MoE
+import torch
+from mixture_of_experts import MoE
 
 # Define parameters
 num_experts = 10
